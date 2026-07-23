@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales Performance & Profitability Dashboard</title>
+<meta name="description" content="A data analyst portfolio project: an interactive sales performance and profitability dashboard built with HTML, CSS, JS and Chart.js.">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Chart.js + PapaParse (CDN) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ LOADER ============ -->
+<div id="loader" class="loader" aria-live="polite" aria-busy="true">
+  <div class="loader-mark">
+    <svg viewBox="0 0 48 48" width="48" height="48">
+      <circle cx="24" cy="24" r="20" fill="none" stroke="#E5E9F2" stroke-width="4"/>
+      <circle cx="24" cy="24" r="20" fill="none" stroke="#1D4ED8" stroke-width="4"
+              stroke-linecap="round" stroke-dasharray="90 126" class="loader-arc"/>
+    </svg>
+  </div>
+  <p>Loading sales data&hellip;</p>
+</div>
+
+<div class="app" id="app" hidden>
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-mark">SP</span>
+      <div class="brand-text">
+        <strong>Sales Performance</strong>
+        <span>&amp; Profitability</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Primary">
+      <button class="nav-item is-active" data-view="dashboard">
+        <svg viewBox="0 0 24 24"><path d="M3 13h4v8H3zM10 3h4v18h-4zM17 8h4v13h-4z"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" data-view="sql">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16v4H4zM4 10h16v4H4zM4 16h16v4H4z"/></svg>
+        SQL Insights
+      </button>
+      <button class="nav-item" data-view="insights">
+        <svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>
+        Business Insights
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <p>Data Analyst Portfolio Project</p>
+      <p class="muted">FY2024&ndash;2025 &middot; USD</p>
+    </div>
+  </aside>
+
+  <div class="scrim" id="scrim"></div>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+
+    <!-- Top bar -->
+    <header class="topbar">
+      <button class="icon-btn menu-btn" id="menuBtn" aria-label="Toggle menu">
+        <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+
+      <div class="topbar-title">
+        <h1 id="viewTitle">Dashboard</h1>
+        <p id="viewSubtitle">Overview of revenue, profit and performance</p>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" id="exportCsvBtn">
+          <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+          Export CSV
+        </button>
+      </div>
+    </header>
+
+    <!-- Filter bar -->
+    <div class="filterbar" id="filterbar">
+      <div class="filter-group">
+        <label for="yearFilter">Year</label>
+        <select id="yearFilter"><option value="all">All years</option></select>
+      </div>
+      <div class="filter-group">
+        <label for="regionFilter">Region</label>
+        <select id="regionFilter"><option value="all">All regions</option></select>
+      </div>
+      <div class="filter-group">
+        <label for="categoryFilter">Category</label>
+        <select id="categoryFilter"><option value="all">All categories</option></select>
+      </div>
+      <button class="btn btn-text" id="resetFilters">Reset filters</button>
+      <div class="filter-chips" id="filterChips" aria-live="polite"></div>
+    </div>
+
+    <!-- ============ DASHBOARD VIEW ============ -->
+    <section class="view is-active" id="view-dashboard">
+
+      <div class="kpi-grid">
+        <article class="kpi-card">
+          <div class="kpi-icon kpi-icon--sales">
+            <svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M21 7v6M21 7h-6"/></svg>
+          </div>
+          <div class="kpi-body">
+            <span class="kpi-label">Total Sales</span>
+            <span class="kpi-value" id="kpiSales">$0</span>
+            <span class="kpi-sub" id="kpiSalesSub">&nbsp;</span>
+          </div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-icon kpi-icon--profit">
+            <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5.5C17 3.6 14.8 2 12 2s-5 1.6-5 3.5S9.2 9 12 9s5 1.6 5 3.5S14.8 16 12 16s-5-1.6-5-3.5"/></svg>
+          </div>
+          <div class="kpi-body">
+            <span class="kpi-label">Total Profit</span>
+            <span class="kpi-value" id="kpiProfit">$0</span>
+            <span class="kpi-sub" id="kpiProfitSub">&nbsp;</span>
+          </div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-icon kpi-icon--orders">
+            <svg viewBox="0 0 24 24"><path d="M6 2l1.5 4M6 2h13l-2 9H8M6 2L4 2M7.5 6h13.5l-1.7 7"/><circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/></svg>
+          </div>
+          <div class="kpi-body">
+            <span class="kpi-label">Total Orders</span>
+            <span class="kpi-value" id="kpiOrders">0</span>
+            <span class="kpi-sub" id="kpiOrdersSub">&nbsp;</span>
+          </div>
+        </article>
+
+        <article class="kpi-card">
+          <div class="kpi-icon kpi-icon--aov">
+            <svg viewBox="0 0 24 24"><path d="M12 3v18M5 8h9a3 3 0 010 6H8a3 3 0 000 6h10"/></svg>
+          </div>
+          <div class="kpi-body">
+            <span class="kpi-label">Avg Order Value</span>
+            <span class="kpi-value" id="kpiAov">$0</span>
+            <span class="kpi-sub" id="kpiAovSub">&nbsp;</span>
+          </div>
+        </article>
+      </div>
+
+      <div class="chart-grid">
+        <article class="chart-card chart-card--wide">
+          <header>
+            <h2>Monthly Sales Trend</h2>
+            <button class="icon-btn download-btn" data-chart="trendChart" aria-label="Download chart as PNG">
+              <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+            </button>
+          </header>
+          <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+        </article>
+
+        <article class="chart-card">
+          <header>
+            <h2>Sales by Category</h2>
+            <button class="icon-btn download-btn" data-chart="categoryChart" aria-label="Download chart as PNG">
+              <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+            </button>
+          </header>
+          <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
+        </article>
+
+        <article class="chart-card">
+          <header>
+            <h2>Sales by Region</h2>
+            <button class="icon-btn download-btn" data-chart="regionChart" aria-label="Download chart as PNG">
+              <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+            </button>
+          </header>
+          <div class="chart-wrap"><canvas id="regionChart"></canvas></div>
+        </article>
+
+        <article class="chart-card">
+          <header>
+            <h2>Top 10 Products</h2>
+            <button class="icon-btn download-btn" data-chart="topProductsChart" aria-label="Download chart as PNG">
+              <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+            </button>
+          </header>
+          <div class="chart-wrap chart-wrap--tall"><canvas id="topProductsChart"></canvas></div>
+        </article>
+
+        <article class="chart-card">
+          <header>
+            <h2>Profit vs Sales</h2>
+            <button class="icon-btn download-btn" data-chart="scatterChart" aria-label="Download chart as PNG">
+              <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+            </button>
+          </header>
+          <div class="chart-wrap"><canvas id="scatterChart"></canvas></div>
+        </article>
+      </div>
+
+      <!-- Table -->
+      <article class="table-card">
+        <header class="table-card-header">
+          <h2>Sales Transactions</h2>
+          <div class="table-controls">
+            <div class="search-box">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              <input type="search" id="tableSearch" placeholder="Search product, rep, customer, city&hellip;">
+            </div>
+            <span class="table-count" id="tableCount"></span>
+          </div>
+        </header>
+
+        <div class="table-scroll">
+          <table id="salesTable">
+            <thead>
+              <tr>
+                <th data-key="orderId">Order ID</th>
+                <th data-key="date">Date</th>
+                <th data-key="region">Region</th>
+                <th data-key="category">Category</th>
+                <th data-key="product">Product</th>
+                <th data-key="rep">Sales Rep</th>
+                <th data-key="sales" class="num">Sales</th>
+                <th data-key="profit" class="num">Profit</th>
+                <th data-key="margin" class="num">Margin</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+
+        <footer class="table-pagination">
+          <button class="btn btn-ghost" id="prevPage">Previous</button>
+          <span id="pageInfo">Page 1</span>
+          <button class="btn btn-ghost" id="nextPage">Next</button>
+        </footer>
+      </article>
+    </section>
+
+    <!-- ============ SQL INSIGHTS VIEW ============ -->
+    <section class="view" id="view-sql">
+      <p class="view-intro">
+        The dataset was also modeled and queried in SQL (see <code>sql_analysis.sql</code>) to demonstrate
+        database-level analysis alongside the spreadsheet/dashboard view. Each card below explains the
+        business question a query answers &mdash; expand a card to see the query itself.
+      </p>
+      <div class="sql-grid" id="sqlGrid"></div>
+    </section>
+
+    <!-- ============ BUSINESS INSIGHTS VIEW ============ -->
+    <section class="view" id="view-insights">
+      <p class="view-intro">
+        Findings below are computed live from the currently filtered dataset &mdash; adjust the filters
+        at the top of the page and these update automatically.
+      </p>
+      <div class="insights-grid" id="insightsGrid"></div>
+    </section>
+
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
